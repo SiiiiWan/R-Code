@@ -21,6 +21,7 @@ dat$Cursor <- as.factor(dat$Cursor)
 dat$Amp <- as.factor(dat$Amp)
 dat$Width <- as.factor(dat$Width)
 dat$id <- as.factor(dat$id)
+dat$ErrorRate <- as.numeric(dat$ErrorRate)
 
 # change the names of factors if needed
 dat$Cursor <- fct_recode(dat$Cursor, "NoGain" = "1", "Low" = "2", "Medium" = "3", "High" = "4")
@@ -51,7 +52,8 @@ winsorize <- function(x) {
 }
 dat <- dat %>%
   group_by(Amp, Width, Cursor) %>%
-  mutate(ErrorRate = winsorize(ErrorRate))
+  mutate(ErrorRate = winsorize(ErrorRate))%>%
+  ungroup()
 
 ## double check outliers are removed
 extreme_outliers <- dat %>%
@@ -62,8 +64,6 @@ nrow(extreme_outliers) # number of extreme outliers
 
 
 # check for normality of raw data for each subgroups
-nomality_check.plot_qq(dat, "ErrorRate", "Width", "Cursor", "Amp")
-
 shapiro_result <- dat %>%
   group_by(Cursor, Amp, Width) %>%
   shapiro_test(ErrorRate)
@@ -119,11 +119,12 @@ library(ARTool)
 m_art = art(ErrorRate ~ Amp * Width * Cursor + Error(id), data = dat) # as we are using repeated measures Error(id) is used stead of (1|id)
 
 ## run anova
-anova(m_art)
+anova_art = anova(m_art)
+
 
 ## effect size
-# library(effectsize)
-# eta_squared(m_art)
+anova_art$part.eta.sq = with(anova_art, `Sum Sq`/(`Sum Sq` + `Sum Sq.res`))
+anova_art
 
 # post-hoc pairwise comparisons
 
